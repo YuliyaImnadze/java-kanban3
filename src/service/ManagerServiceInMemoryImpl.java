@@ -3,19 +3,28 @@ package service;
 import task.Task;
 import task.sub.Epic;
 import task.sub.SubTask;
+import task.TaskStatus;
 
 import java.util.*;
 
+/* Добрый вечер, Андрей.
+Использование интерфейса ManagerService, enum и структуру посоветовал наставник на вебинаре.
+ */
+
 public class ManagerServiceInMemoryImpl implements ManagerService {
-    private Map<Integer, Task> tasks = new HashMap<>();
-    private Map<Integer, Epic> epics = new HashMap<>();
-    private Map<Integer, SubTask> subTasks = new HashMap<>();
+    private final Map<Integer, Task> tasks = new HashMap<>();
+    private final Map<Integer, Epic> epics = new HashMap<>();
+    private final Map<Integer, SubTask> subTasks = new HashMap<>();
 
     private int i = 0;
 
+    private int newId() {
+        return ++i;
+    }
+
     @Override
     public void createTask(Task task) {
-        task.setId(++i);
+        task.setId(newId());
         tasks.put(task.getId(), task);
     }
 
@@ -25,8 +34,28 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
     }
 
     @Override
+    public Collection<SubTask> getAllSubtasks() {
+        return subTasks.values();
+    }
+
+    @Override
+    public Task getTaskByID(int taskId) {
+        return tasks.get(taskId);
+    }
+
+    @Override
+    public Epic getEpicByID(int epicId) {
+        return epics.get(epicId);
+    }
+
+    @Override
+    public SubTask getSubtaskByID(int subtaskId) {
+        return subTasks.get(subtaskId);
+    }
+
+    @Override
     public void createEpic(Epic epic) {
-        epic.setId(++i);
+        epic.setId(newId());
         epics.put(epic.getId(), epic);
     }
 
@@ -37,20 +66,21 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
 
     @Override
     public void addSubTask(SubTask subTask) {
-        int subTaskId = ++this.i;
+        int subTaskId = this.newId();
         subTask.setId(subTaskId);
         subTasks.put(subTaskId, subTask);
         int epicIdOfSubTask = subTask.getEpicId();
         Epic epic = epics.get(epicIdOfSubTask);
         if (epic != null) {
-            epic.addSubTask(subTask);
+            epic.addSubTaskID(subTask);
+            this.setEpicStatus(epics.get(subTask.getEpicId()));
         }
     }
 
     @Override
-    public List<SubTask> getSubTask(int epicId) {
+    public List<Integer> getSubTask(int epicId) {
         Epic epic = epics.get(epicId);
-        return epic.getSubTasks();
+        return epic.getSubTaskIDs();
     }
 
     @Override
@@ -60,7 +90,18 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
 
     @Override
     public void deleteSubtaskById(int subtaskId) {
-       subTasks.remove(subtaskId);
+        int epicIdOfSubTask = subTasks.get(subtaskId).getEpicId();
+        Epic epic = epics.get(epicIdOfSubTask);
+        subTasks.remove(subtaskId);
+        List<Integer> subtasksFromEpic = epic.getSubTaskIDs();
+        for (int i = 0; i < subtasksFromEpic.size(); i++) {
+            if (subtasksFromEpic.get(i) == subtaskId) {
+                epic.removeSubTaskID(i);
+            }
+
+        }
+
+        this.setEpicStatus(epic);
     }
 
     @Override
@@ -71,13 +112,8 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
 
     @Override
     public void deleteAllEpics() {
-        Collection<Epic> allEpics = this.getEpics();
-        Iterator<Epic> iterator = allEpics.iterator();
-        while (iterator.hasNext()) {
-            Epic e1 = iterator.next();
-            this.deleteSubtaskById(e1.getId());
-        }
         epics.clear();
+        subTasks.clear();
     }
 
     @Override
@@ -102,21 +138,15 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
         }
         if (idUpdEpic >= 0) {
             epic.setId(idUpdEpic);
-
-            List<SubTask> subTasksMod = epics.get(idUpdEpic).getSubTasks();
-            for (int i = 0; i < subTasksMod.size(); i++)
-            {
-                SubTask subTaskModified = new SubTask(subTasksMod.get(i).getName(), epic.getStatus(),subTasksMod.get(i).getDescription(), epic.getId());
-                subTaskModified.setId(subTasksMod.get(i).getId());
-                subTasksMod.set(i, subTaskModified);
-                subTasks.put(subTaskModified.getId(), subTaskModified);
-                epic.addSubTask(subTaskModified);
+            for (int i = 0; i < epics.get(idUpdEpic).getSubTaskIDs().size(); i++) {
+                SubTask subTask = subTasks.get(epics.get(idUpdEpic).getSubTaskIDs().get(i));
+                epic.addSubTaskID(subTask);
             }
             epics.put(idUpdEpic, epic);
         }
     }
 
-    @Override
+       @Override
     public void updateSubtask(SubTask subTask) {
         int idUpdSubtask = -1;
         for (Map.Entry<Integer, SubTask> entry : subTasks.entrySet()) {
@@ -126,23 +156,55 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
         if (idUpdSubtask >= 0) {
             subTask.setId(idUpdSubtask);
             subTasks.put(idUpdSubtask, subTask);
-            Epic ep1 = epics.get(subTask.getEpicId());
-            ep1.updateSubtaskInEpic(subTask.getId(),subTask);
-            ep1.setEpicStatus();
-            "".isEmpty();
+            this.setEpicStatus(epics.get(subTask.getEpicId()));
         }
 
     }
 
+
+    public void setEpicStatus(Epic epic) {
+        TaskStatus oldTaskStatus = epic.getStatus();
+        ArrayList<SubTask> subTasksUpd = new ArrayList<>();
+        for (int i = 0; i < epic.getSubTaskIDs().size(); i++) {
+            subTasksUpd.add(subTasks.get(epic.getSubTaskIDs().get(i)));
+        }
+
+        int counterDone = 0;
+        int counterNew = 0;
+        for (SubTask subTask : subTasksUpd) {
+            switch (subTask.getStatus()) {
+                case NEW:
+                    counterNew++;
+                    break;
+                case IN_PROGRESS:
+                    break;
+                case DONE:
+                    counterDone++;
+                    break;
+            }
+        }
+
+        if (subTasksUpd.size() == 0) {
+            epic.setStatus(TaskStatus.NEW);
+        } else if (counterDone == subTasksUpd.size()) {
+            epic.setStatus(TaskStatus.DONE);
+        } else if (counterNew == subTasksUpd.size()) {
+            epic.setStatus(oldTaskStatus);
+        } else {
+            epic.setStatus(TaskStatus.IN_PROGRESS);
+        }
+
+
+    }
+
+
     @Override
-    public void deleteTaskById (int taskId)
-    {
+    public void deleteTaskById(int taskId) {
         tasks.remove(taskId);
     }
 
     @Override
-    public void deleteEpicById (int epicId)
-    {
+    public void deleteEpicById(int epicId) {
         epics.remove(epicId);
 
         ArrayList<Integer> idDelSubtasks = new ArrayList<>();

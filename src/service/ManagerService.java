@@ -21,11 +21,13 @@ public interface ManagerService {
 
     Collection<Epic> getEpics();
 
+    Collection<SubTask> getAllSubtasks();
+
     void addSubTask(SubTask subTask);
 
     void updateSubtask (SubTask subTask);
 
-    List<SubTask> getSubTask(int epicId);
+    List<Integer> getSubTask(int epicId);
 
     void deleteAllTasks();
 
@@ -38,6 +40,12 @@ public interface ManagerService {
     void deleteEpicById (int epicId);
 
     void deleteSubtaskById (int epicId);
+
+    Task getTaskByID (int taskId);
+
+    Epic getEpicByID (int epicId);
+
+    SubTask getSubtaskByID (int subtaskId);
 }
 
 
