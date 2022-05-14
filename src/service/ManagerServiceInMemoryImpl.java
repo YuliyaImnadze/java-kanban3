@@ -12,15 +12,6 @@ import java.util.*;
  */
 
 public class ManagerServiceInMemoryImpl implements ManagerService {
-    private final Map<Integer, Task> tasks = new HashMap<>();
-    private final Map<Integer, Epic> epics = new HashMap<>();
-    private final Map<Integer, SubTask> subTasks = new HashMap<>();
-
-    private int i = 0;
-
-    private int newId() {
-        return ++i;
-    }
 
     @Override
     public void createTask(Task task) {
@@ -78,9 +69,14 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
     }
 
     @Override
-    public List<Integer> getSubTask(int epicId) {
+    public ArrayList<SubTask> getSubTask(int epicId) {
         Epic epic = epics.get(epicId);
-        return epic.getSubTaskIDs();
+        ArrayList<SubTask> subTaskArrayList = new ArrayList<>();
+        List<Integer> subtasksFromEpic = epic.getSubTaskIDs();
+        for (Integer integer : subtasksFromEpic) {
+            subTaskArrayList.add(subTasks.get(integer));
+        }
+        return subTaskArrayList;
     }
 
     @Override
@@ -161,8 +157,30 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
 
     }
 
+    @Override
+    public void deleteTaskById(int taskId) {
+        tasks.remove(taskId);
+    }
 
-    public void setEpicStatus(Epic epic) {
+    @Override
+    public void deleteEpicById(int epicId) {
+        epics.remove(epicId);
+
+        ArrayList<Integer> idDelSubtasks = new ArrayList<>();
+        for (Map.Entry<Integer, SubTask> entry : subTasks.entrySet()) {
+            if (entry.getValue().getEpicId() == epicId)
+                idDelSubtasks.add(entry.getValue().getId());
+        }
+
+        for (Integer idDelSubtask : idDelSubtasks) {
+            subTasks.remove(idDelSubtask);
+        }
+    }
+
+
+
+
+    private void setEpicStatus(Epic epic) {
         TaskStatus oldTaskStatus = epic.getStatus();
         ArrayList<SubTask> subTasksUpd = new ArrayList<>();
         for (int i = 0; i < epic.getSubTaskIDs().size(); i++) {
@@ -193,31 +211,17 @@ public class ManagerServiceInMemoryImpl implements ManagerService {
         } else {
             epic.setStatus(TaskStatus.IN_PROGRESS);
         }
-
-
     }
 
+    private final Map<Integer, Task> tasks = new HashMap<>();
+    private final Map<Integer, Epic> epics = new HashMap<>();
+    private final Map<Integer, SubTask> subTasks = new HashMap<>();
+    private int i = 0;
 
-    @Override
-    public void deleteTaskById(int taskId) {
-        tasks.remove(taskId);
+    private int newId() {
+        return ++i;
     }
 
-    @Override
-    public void deleteEpicById(int epicId) {
-        epics.remove(epicId);
-
-        ArrayList<Integer> idDelSubtasks = new ArrayList<>();
-        for (Map.Entry<Integer, SubTask> entry : subTasks.entrySet()) {
-            if (entry.getValue().getEpicId() == epicId)
-                idDelSubtasks.add(entry.getValue().getId());
-        }
-
-        for (Integer idDelSubtask : idDelSubtasks) {
-            subTasks.remove(idDelSubtask);
-        }
-
-    }
 
 }
 

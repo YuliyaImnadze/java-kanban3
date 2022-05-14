@@ -4,7 +4,7 @@ import task.Task;
 import task.sub.Epic;
 import task.sub.SubTask;
 
-import java.util.Collection;
+import java.util.*;
 import java.util.List;
 
 public interface ManagerService {
@@ -27,7 +27,7 @@ public interface ManagerService {
 
     void updateSubtask (SubTask subTask);
 
-    List<Integer> getSubTask(int epicId);
+    ArrayList<SubTask> getSubTask(int epicId);
 
     void deleteAllTasks();
 

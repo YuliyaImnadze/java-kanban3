@@ -33,7 +33,8 @@ public class Main {
         managerServiceInMemory.addSubTask(new SubTask("Документы в МФЦ", TaskStatus.IN_PROGRESS, "Отдать документы в МФЦ", 3));
 //        managerServiceInMemory.deleteSubtaskById(5);
 //        managerServiceInMemory.updateSubtask(new SubTask("Подписать договор", TaskStatus.IN_PROGRESS, "Заключить договор", 3));
-        System.out.println(managerServiceInMemory.getEpics());
-        System.out.println(managerServiceInMemory.getAllSubtasks());
+//        System.out.println(managerServiceInMemory.getEpics());
+//        System.out.println(managerServiceInMemory.getAllSubtasks());
+        System.out.println(managerServiceInMemory.getSubTask(3));
     }
 }
